@@ -1,5 +1,8 @@
 import * as dl from 'deeplearn';
 import * as nn_art_util from './nn_art_util';
+import { Tracking } from 'deeplearn/dist/tracking';
+import { ArrayOps } from 'deeplearn/dist/ops/array_ops';
+import { Tensor } from 'deeplearn';
 
 const MAX_LAYERS = 10;
 
@@ -40,9 +43,8 @@ export class CPPN {
     this.inferenceCanvas.width = canvasSize;
     this.inferenceCanvas.height = canvasSize;
 
-    this.inputAtlas = nn_art_util.createInputAtlas(
-        canvasSize, NUM_IMAGE_SPACE_VARIABLES, NUM_LATENT_VARIABLES);
-    this.ones = dl.ones([this.inputAtlas.shape[0], 1]);
+    this.inputAtlas = nn_art_util.createInputAtlas(canvasSize, NUM_IMAGE_SPACE_VARIABLES, NUM_LATENT_VARIABLES);
+    this.ones = Tensor.ones([this.inputAtlas.shape[0], 1]);
   }
 
   generateWeights(neuronsPerLayer: number, weightsStdev: number) {
@@ -57,14 +59,14 @@ export class CPPN {
       this.lastLayerWeights.dispose();
     }
 
-    this.firstLayerWeights = dl.truncatedNormal(
+    this.firstLayerWeights = ArrayOps.truncatedNormal(
         [NUM_IMAGE_SPACE_VARIABLES + NUM_LATENT_VARIABLES, neuronsPerLayer], 0,
         weightsStdev);
     for (let i = 0; i < MAX_LAYERS; i++) {
-      this.intermediateWeights.push(dl.truncatedNormal(
+      this.intermediateWeights.push(ArrayOps.truncatedNormal(
           [neuronsPerLayer, neuronsPerLayer], 0, weightsStdev));
     }
-    this.lastLayerWeights = dl.truncatedNormal(
+    this.lastLayerWeights = ArrayOps.truncatedNormal(
         [neuronsPerLayer, 3 /** max output channels */], 0, weightsStdev);
   }
 
@@ -97,9 +99,9 @@ export class CPPN {
     this.z1Counter += 1 / this.z1Scale;
     this.z2Counter += 1 / this.z2Scale;
 
-    const lastOutput = dl.tidy(() => {
-      const z1 = dl.scalar(Math.sin(this.z1Counter));
-      const z2 = dl.scalar(Math.cos(this.z2Counter));
+    const lastOutput = Tracking.tidy(() => {
+      const z1 = ArrayOps.scalar(Math.sin(this.z1Counter));
+      const z2 = ArrayOps.scalar(Math.cos(this.z2Counter));
       const z1Mat = z1.mul(this.ones) as dl.Tensor2D;
       const z2Mat = z2.mul(this.ones) as dl.Tensor2D;
 
